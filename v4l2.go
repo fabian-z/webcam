@@ -76,11 +76,6 @@ type v4l2_frmsize_stepwise struct {
 	Step_height uint32
 }
 
-type v4l2_format struct {
-	_type uint32
-	union [204]uint8
-}
-
 type v4l2_pix_format struct {
 	Width        uint32
 	Height       uint32
@@ -216,49 +211,6 @@ func getFrameSize(fd uintptr, index uint32, code uint32) (frameSize [6]uint32, e
 
 }
 
-func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint32) (err error) {
-
-	format := &v4l2_format{
-		_type: V4L2_BUF_TYPE_VIDEO_CAPTURE,
-	}
-
-	pix := v4l2_pix_format{
-		Width:       *width,
-		Height:      *height,
-		Pixelformat: *formatcode,
-		Field:       V4L2_FIELD_ANY,
-	}
-
-	pixbytes := &bytes.Buffer{}
-	err = binary.Write(pixbytes, binary.LittleEndian, pix)
-
-	if err != nil {
-		return
-	}
-
-	copy(format.union[:], pixbytes.Bytes())
-
-	err = ioctl.Ioctl(fd, VIDIOC_S_FMT, uintptr(unsafe.Pointer(format)))
-
-	if err != nil {
-		return
-	}
-
-	pixReverse := &v4l2_pix_format{}
-	err = binary.Read(bytes.NewBuffer(format.union[:]), binary.LittleEndian, pixReverse)
-
-	if err != nil {
-		return
-	}
-
-	*width = pixReverse.Width
-	*height = pixReverse.Height
-	*formatcode = pixReverse.Pixelformat
-
-	return
-
-}
-
 func mmapRequestBuffers(fd uintptr, buf_count *uint32) (err error) {
 
 	req := &v4l2_requestbuffers{}
@@ -363,40 +315,6 @@ func startStreaming(fd uintptr) (err error) {
 	var uintPointer uint32 = V4L2_BUF_TYPE_VIDEO_CAPTURE
 	err = ioctl.Ioctl(fd, VIDIOC_STREAMON, uintptr(unsafe.Pointer(&uintPointer)))
 	return
-
-}
-
-func waitForFrame(fd uintptr, timeout uint32) (count int, err error) {
-
-	for {
-
-		fds := &FdSet{}
-		fds.Set(fd)
-
-		tv := &unix.Timeval{}
-		tv.Sec = int64(timeout)
-
-		countReturn, _, errno := unix.Syscall6(unix.SYS_SELECT, uintptr(fd+1), uintptr(unsafe.Pointer(fds)), uintptr(0), uintptr(0), uintptr(unsafe.Pointer(tv)), 0)
-
-		count = int(countReturn)
-
-		if errno != 0 {
-			err = errno
-		}
-
-		if count < 0 {
-
-			if err == unix.EINTR {
-				continue
-			}
-
-			return
-
-		}
-
-		return
-
-	}
 
 }
 
