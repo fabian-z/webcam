@@ -14,6 +14,23 @@ type v4l2_format struct {
 	union [200]uint8
 }
 
+type v4l2_buffer struct {
+	index     uint32
+	_type     uint32
+	bytesused uint32
+	flags     uint32
+	field     uint32
+	timestamp unix.Timeval
+	timecode  v4l2_timecode
+	sequence  uint32
+	memory    uint32
+	_         [4]uint8 //padding
+	union     [4]uint8
+	length    uint32
+	reserved2 uint32
+	reserved  uint32
+}
+
 func setImageFormat(fd uintptr, formatcode *uint32, width *uint32, height *uint32) (err error) {
 
 	format := &v4l2_format{

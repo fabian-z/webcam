@@ -98,22 +98,6 @@ type v4l2_requestbuffers struct {
 	reserved [2]uint32
 }
 
-type v4l2_buffer struct {
-	index     uint32
-	_type     uint32
-	bytesused uint32
-	flags     uint32
-	field     uint32
-	timestamp unix.Timeval
-	timecode  v4l2_timecode
-	sequence  uint32
-	memory    uint32
-	union     [8]uint8
-	length    uint32
-	reserved2 uint32
-	reserved  uint32
-}
-
 type v4l2_timecode struct {
 	_type    uint32
 	flags    uint32
